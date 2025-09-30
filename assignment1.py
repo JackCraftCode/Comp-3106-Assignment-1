@@ -1,5 +1,7 @@
 # Name this file to assignment1.py when you submit
 import csv
+from queue import PriorityQueue
+from itertools import count
 # The pathfinding function must implement A* search to find the goal state
 def pathfinding(filepath):
 	# filepath is the path to a CSV file containing a grid
@@ -14,24 +16,33 @@ def pathfinding(filepath):
 	goals = []
 	treasures = []
 
-	for r in range(m):
-		for c in range(n):
-			tempValue = grid[r][c]
+	for row in range(m):
+		for col in range(n):
+			tempValue = grid[row][col]
 			if tempValue == 'S':
-				start = (r, c) # stores as (x, y)
+				start = (row, col) # stores as (x, y)
 			elif tempValue == 'G':
-				goals.append((r,c)) # stores as (x, y) in goals list
-			elif val.isdigit() and int(tempValue) > 0:
-				treasures.append((r,c, int(tempValue))) # stores as (x, y value) in treasures list
+				goals.append((row, col)) # stores as (x, y) in goals list
+			elif tempValue.isdigit() and int(tempValue) > 0:
+				treasures.append((row, col, int(tempValue))) # stores as (x, y value) in treasures list
+	
+	frontier = PriorityQueue()
+	counter = count()
+	frontier.put((0, next(counter), 0, start, frozenset() , [start]))
+	explored = set()
+	numStatesExplored = 0
 
+	def heuristic(pos, collected):
+		row , col = pos
+		if goals:
+			return min(abs(row - goalRow) + abs(col - goalCol) for (goalRow, goalCol) in goals)
+		return 0
+
+	while not frontier.empty():
+		f, _, g 
+		
 	# optimal_path is a list of coordinate of squares visited (in order)
 	# optimal_path_cost is the cost of the optimal path
 	# num_states_explored is the number of states explored during A* search
-	return optimal_path, optimal_path_cost, num_states_explored
-
-def distance(r1, r2, c1, c2): # Manhattan Distance
-	return (r2 - r1) + (c2 - c1)
-
-def calculateHeuristic(row, col, curTrsrVal):
-	# reqTrsrVal = 5 - curTrsrVal
-	pass
+	
+	# return optimal_path, optimal_path_cost, num_states_explored
