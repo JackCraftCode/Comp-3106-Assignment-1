@@ -27,13 +27,14 @@ def pathfinding(filepath) -> tuple[list[tuple[int, int]], int ,int]:
 			elif tempValue.isdigit() and int(tempValue) > 0:
 				treasures.append((row, col, int(tempValue)))  # stores as (x, y, value) in treasures list
 
-	return aStarSearch(grid, start, goals, treasures)
+	results = aStarSearch(grid, start, goals, treasures)
+	return results[0], len(results[0]), results[1]
 
 
-def aStarSearch(grid: list[tuple[int, int]],
+def aStarSearch(grid: list[list[int]],
                 start: tuple[int, int],
                 goals: list[tuple[int, int]],
-                treasures: list[tuple[int, int, int]]) -> tuple[list[tuple[int, int]], int ,int]:
+                treasures: list[tuple[int, int, int]]) -> tuple[list[tuple[int, int]] ,int]:
 	treasureCollected = 0
 	optimalPathCost = 0
 	numStatesExplored = 0
@@ -52,9 +53,32 @@ def aStarSearch(grid: list[tuple[int, int]],
 		currentNode = openDict[currentPos]
 
 		if currentPos in goals and treasureCollected >= 5:
-			return reconstructPath(currentNode), optimalPathCost, numStatesExplored
+			return reconstructPath(currentNode), numStatesExplored
 
-	return [], 0, 0
+		closedSet.add(currentPos)
+
+		for neighborPos in getValidNeighbors(grid, currentPos):
+			if neighborPos in closedSet: continue
+
+			tentativeG = currentNode['g'] + 1
+
+			if neighborPos not in openDict:
+				neighbor = createNode(
+					pos = neighborPos,
+					g = tentativeG,
+					h = heuristic(neighborPos, goals, treasures, treasureCollected),
+					parent = currentNode
+				)
+				heapq.heappush(openList, (neighbor['f'], neighborPos))
+				openDict[neighborPos] = neighbor
+			elif tentativeG < openDict[neighborPos]['g']:
+				# Found a better path to the neighbor
+				neighbor = openDict[neighborPos]
+				neighbor['g'] = tentativeG
+				neighbor['f'] = tentativeG + neighbor['h']
+				neighbor['parent'] = currentNode
+
+	return [], 0
 
 
 def createNode(pos: tuple[int, int],
@@ -73,10 +97,10 @@ def getValidNeighbors(grid: list[list[int]],
 		(x+1, y), (x-1, y),
 		(x, y+1), (x, y-1)
 	]
+
 	return [
 		(nx, ny) for nx, ny in possibleMoves if
-			0 <= nx < cols and 0 <= ny < rows and
-			grid[nx][ny] != 'X'
+			0 <= nx < cols and 0 <= ny < rows and grid[nx][ny] != 'X'
 	]
 
 
@@ -118,4 +142,8 @@ def manh(a: tuple[int, int], b: tuple[int, int]) -> int:
 
 
 if __name__ == '__main__':
-	pathfinding("../Examples/Example0/grid.txt")
+	print(pathfinding("../Examples/Example0/grid.txt"))
+	print(pathfinding("../Examples/Example1/grid.txt"))
+	print(pathfinding("../Examples/Example2/grid.txt"))
+	print(pathfinding("../Examples/Example3/grid.txt"))
+
