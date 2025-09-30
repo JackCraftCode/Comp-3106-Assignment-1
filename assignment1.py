@@ -28,17 +28,18 @@ def pathfinding(filepath):
 	
 	frontier = PriorityQueue()
 	counter = count()
-	frontier.put((0, next(counter), 0, start, , [start]))
+	frontier.put((0, next(counter), 0, start, frozenset() , [start]))
 	explored = set()
 	numStatesExplored = 0
 
-	def heuristic(pos, collected)
+	def heuristic(pos, collected):
 		row , col = pos
 		if goals:
 			return min(abs(row - goalRow) + abs(col - goalCol) for (goalRow, goalCol) in goals)
 		return 0
 
 	while not frontier.empty():
+		f, _, g 
 		
 	# optimal_path is a list of coordinate of squares visited (in order)
 	# optimal_path_cost is the cost of the optimal path
