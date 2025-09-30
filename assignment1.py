@@ -36,7 +36,6 @@ def aStarSearch(grid: list[list[int]],
                 goals: list[tuple[int, int]],
                 treasures: list[tuple[int, int, int]]) -> tuple[list[tuple[int, int]] ,int]:
 	treasureCollected = 0
-	optimalPathCost = 0
 	numStatesExplored = 0
 	startNode = createNode(
 		pos = start,
@@ -100,7 +99,7 @@ def getValidNeighbors(grid: list[list[int]],
 
 	return [
 		(nx, ny) for nx, ny in possibleMoves if
-			0 <= nx < cols and 0 <= ny < rows and grid[nx][ny] != 'X'
+			0 <= nx < rows and 0 <= ny < cols and grid[nx][ny] != 'X'
 	]
 
 
@@ -146,4 +145,3 @@ if __name__ == '__main__':
 	print(pathfinding("../Examples/Example1/grid.txt"))
 	print(pathfinding("../Examples/Example2/grid.txt"))
 	print(pathfinding("../Examples/Example3/grid.txt"))
-
