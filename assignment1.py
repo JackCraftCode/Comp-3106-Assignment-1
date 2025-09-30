@@ -1,10 +1,8 @@
-# Name this file to assignment1.py when you submit
 import csv
 from queue import PriorityQueue
 from itertools import count
 # The pathfinding function must implement A* search to find the goal state
 def pathfinding(filepath):
-	# filepath is the path to a CSV file containing a grid
 	grid = []
 	with open(filepath, newline='') as f:
 		reader = csv.reader(f)
@@ -15,6 +13,7 @@ def pathfinding(filepath):
 	start = None
 	goals = []
 	treasures = []
+	treasureCollected = 0
 
 	for row in range(m):
 		for col in range(n):
@@ -32,14 +31,22 @@ def pathfinding(filepath):
 	explored = set()
 	numStatesExplored = 0
 
-	def heuristic(pos, collected):
-		row , col = pos
-		if goals:
-			return min(abs(row - goalRow) + abs(col - goalCol) for (goalRow, goalCol) in goals)
-		return 0
+	def heuristic(pos):
+		if not goals: return 0
+		if treasureCollected >= 5: return closestGoalDistance(pos)
+		return closestTreasureDistance(pos)
 
-	while not frontier.empty():
-		f, _, g 
+	def closestTreasureDistance(pos):
+		treasureDistances = {t:manh(pos, t) for t in treasures}
+		minDist = min(treasureDistances.values())
+		minDistTreasures = [k for k, v in treasureDistances.items() if v == minDist]
+
+		return min(closestGoalDistance(t) for t in minDistTreasures)
+
+	def closestGoalDistance(pos):
+		return min(manh(pos, g) for g in goals)
+
+	def manh(a, b): return abs(a[0] - b[0]) + abs(a[1] - b[1])
 		
 	# optimal_path is a list of coordinate of squares visited (in order)
 	# optimal_path_cost is the cost of the optimal path
