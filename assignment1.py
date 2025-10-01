@@ -7,6 +7,7 @@ def pathfinding(filepath) -> tuple[list[tuple[int, int]], int ,int]:
 	grid = []
 	start = None
 	goals = []
+	walls = []
 	treasures = []
 
 	with open(filepath, newline='') as f:
@@ -19,87 +20,100 @@ def pathfinding(filepath) -> tuple[list[tuple[int, int]], int ,int]:
 
 	for row in range(r):
 		for col in range(c):
-			tempValue = grid[row][col]
-			if tempValue == 'S':
-				start = (row, col)  # stores as (x, y)
-			elif tempValue == 'G':
-				goals.append((row, col))  # stores as (x, y) in goals list
-			elif tempValue.isdigit() and int(tempValue) > 0:
-				treasures.append((row, col, int(tempValue)))  # stores as (x, y, value) in treasures list
+			temp = grid[row][col]
+			if temp == 'S':
+				start = (row, col)
+			elif temp == 'G':
+				goals.append((row, col))
+			elif temp.isdigit() and int(temp) > 0:
+				treasures.append((row, col, int(temp)))
+			elif temp == 'X':
+				walls.append((row, col))
 
-	results = aStarSearch(grid, start, goals, treasures)
-	return results[0], len(results[0]), results[1]
+	path, explored = aStarSearch(grid, start, goals, walls, treasures)
+	cost = max(0, len(path) - 1)
+	return path, cost, explored
 
 
 def aStarSearch(grid: list[list[int]],
                 start: tuple[int, int],
                 goals: list[tuple[int, int]],
+                walls: list[tuple[int, int]],
                 treasures: list[tuple[int, int, int]]) -> tuple[list[tuple[int, int]] ,int]:
-	treasureCollected = 0
-	numStatesExplored = 0
+	print("\n")
 	startNode = createNode(
 		pos = start,
+		treasureValue = 0,
 		g = 0,
-		h = heuristic(start, goals, treasures, treasureCollected)
+		h = heuristic(start, goals, treasures, 0)
 	)
 
-	openList = [(startNode['f'], start)] # Priority queue
-	openDict = {start: startNode}        # For quick node lookup
-	closedSet = set()                    # Explored nodes
+	explored = 0
+	startState = (start, startNode['treasureValue'], startNode['treasureCollected'])
+	openList = [startState]            # Priority queue
+	openDict = {startState: startNode} # For quick node lookup
+	closedSet = set()                  # Explored nodes
 
 	while openList:
-		_, currentPos = heapq.heappop(openList)
-		currentNode = openDict[currentPos]
+		state = heapq.heappop(openList)
+		if state in closedSet: continue
+		curPos, treasureValue, treasureCollected = state
+		curNode = openDict[state]
 
-		if currentPos in goals and treasureCollected >= 5:
-			return reconstructPath(currentNode), numStatesExplored
+		print(curPos in goals)
+		print(treasureValue)
+		if curPos in goals and treasureValue >= 5:
+			return reconstructPath(curNode), explored
 
-		closedSet.add(currentPos)
+		explored += 1
+		closedSet.add(state)
 
-		for neighborPos in getValidNeighbors(grid, currentPos):
-			if neighborPos in closedSet: continue
+		for nPos in getValidNeighbors(curPos, (len(grid), len(grid[0])), walls):
+			nVal = treasureValue
+			nCol = treasureCollected
 
-			tentativeG = currentNode['g'] + 1
+			if nPos in treasures and nPos not in nCol:
+				nVal = treasureValue + int(grid[nPos[0]][nPos[1]])
+				nCol = frozenset(set(treasureCollected) | {nPos})
 
-			if neighborPos not in openDict:
+			nState = (nPos, nVal, nCol)
+			if nState in closedSet: continue
+
+			tentativeG = curNode['g'] + 1
+			prev = openDict.get(nState)
+			if prev is None or tentativeG < prev['g']:
 				neighbor = createNode(
-					pos = neighborPos,
+					pos = nPos,
+					treasureValue = nVal,
+					treasureCollected = nCol,
 					g = tentativeG,
-					h = heuristic(neighborPos, goals, treasures, treasureCollected),
-					parent = currentNode
+					h = heuristic(nPos, goals, treasures, curNode['treasureValue']),
+					parent = curNode
 				)
-				heapq.heappush(openList, (neighbor['f'], neighborPos))
-				openDict[neighborPos] = neighbor
-			elif tentativeG < openDict[neighborPos]['g']:
-				# Found a better path to the neighbor
-				neighbor = openDict[neighborPos]
-				neighbor['g'] = tentativeG
-				neighbor['f'] = tentativeG + neighbor['h']
-				neighbor['parent'] = currentNode
+				openDict[nState] = neighbor
+				heapq.heappush(openList, nState)
 
 	return [], 0
 
 
 def createNode(pos: tuple[int, int],
+               treasureValue: int,
+               treasureCollected: tuple[tuple[int, int]] = tuple(),
                g: float = float('inf'),
-               h: float = 0.0,
+               h: int = 0,
                parent: dict = None) -> dict:
-	return {'pos': pos, 'g': g, 'h': h, 'f': g + h, 'parent': parent}
+	return {'pos': pos, 'treasureValue': treasureValue, 'treasureCollected': treasureCollected,
+	        'g': g, 'h': h, 'f': g + h, 'parent': parent}
 
 
-def getValidNeighbors(grid: list[list[int]],
-                      pos: tuple[int, int]) -> list[tuple[int, int]]:
+def getValidNeighbors(pos: tuple[int, int], size: tuple[int, int],
+                      walls: list[tuple[int, int]]) -> list[tuple[int, int]]:
 	x, y = pos
-	rows = len(grid)
-	cols = len(grid[0])
-	possibleMoves = [
-		(x+1, y), (x-1, y),
-		(x, y+1), (x, y-1)
-	]
+	r, c = size
 
 	return [
-		(nx, ny) for nx, ny in possibleMoves if
-			0 <= nx < rows and 0 <= ny < cols and grid[nx][ny] != 'X'
+		(nx, ny) for nx, ny in ((x+1, y), (x-1, y), (x, y+1), (x, y-1)) if
+			0 <= nx < r and 0 <= ny < c and (nx, ny) not in walls
 	]
 
 
@@ -130,11 +144,12 @@ def closestTreasureDistance(pos: tuple[int, int],
 	minDist = min(treasureDistances.values())
 	minDistTreasures = [k for k, v in treasureDistances.items() if v == minDist]
 
-	return min(closestGoalDistance((t[0], t[1]), goals) for t in minDistTreasures)
+	return min(closestGoalDistance((t[0], t[1]), goals) for t in minDistTreasures) + minDist
 
 
 def closestGoalDistance(pos: tuple[int, int], goals: list[tuple[int, int]]) -> int:
 	return min(manh(pos, g) for g in goals)
+
 
 def manh(a: tuple[int, int], b: tuple[int, int]) -> int:
 	return abs(a[0] - b[0]) + abs(a[1] - b[1])
