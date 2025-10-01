@@ -40,7 +40,6 @@ def aStarSearch(grid: list[list[int]],
                 goals: list[tuple[int, int]],
                 walls: list[tuple[int, int]],
                 treasures: list[tuple[int, int, int]]) -> tuple[list[tuple[int, int]] ,int]:
-	print("\n")
 	startNode = createNode(
 		pos = start,
 		treasureValue = 0,
@@ -60,8 +59,6 @@ def aStarSearch(grid: list[list[int]],
 		curPos, treasureValue, treasureCollected = state
 		curNode = openDict[state]
 
-		print(curPos in goals)
-		print(treasureValue)
 		if curPos in goals and treasureValue >= 5:
 			return reconstructPath(curNode), explored
 
@@ -72,8 +69,10 @@ def aStarSearch(grid: list[list[int]],
 			nVal = treasureValue
 			nCol = treasureCollected
 
-			if nPos in treasures and nPos not in nCol:
-				nVal = treasureValue + int(grid[nPos[0]][nPos[1]])
+			v = next((v for x, y, v in treasures if (x, y) == nPos), None)
+
+			if v is not None and nPos not in nCol:
+				nVal = treasureValue + v
 				nCol = frozenset(set(treasureCollected) | {nPos})
 
 			nState = (nPos, nVal, nCol)
